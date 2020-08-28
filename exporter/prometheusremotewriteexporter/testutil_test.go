@@ -156,6 +156,43 @@ func getDoubleDataPoint(labels []*commonpb.StringKeyValue, value float64, ts uin
 	}
 }
 
+func getHistogramDataPoint(labels []*commonpb.StringKeyValue, ts uint64, sum float64, count uint64, bounds []float64, buckets []uint64) *otlp.HistogramDataPoint {
+	bks := []*otlp.HistogramDataPoint_Bucket{}
+	for _, c := range buckets {
+		bks = append(bks, &otlp.HistogramDataPoint_Bucket{
+			Count:    c,
+			Exemplar: nil,
+		})
+	}
+	return &otlp.HistogramDataPoint{
+		Labels:            labels,
+		StartTimeUnixNano: 0,
+		TimeUnixNano:      ts,
+		Count:             count,
+		Sum:               sum,
+		Buckets:           bks,
+		ExplicitBounds:    bounds,
+	}
+}
+
+func getSummaryDataPoint(labels []*commonpb.StringKeyValue, ts uint64, sum float64, count uint64, pcts []float64, values []float64) *otlp.SummaryDataPoint {
+	pcs := []*otlp.SummaryDataPoint_ValueAtPercentile{}
+	for i, v := range values {
+		pcs = append(pcs, &otlp.SummaryDataPoint_ValueAtPercentile{
+			Percentile: pcts[i],
+			Value:      v,
+		})
+	}
+	return &otlp.SummaryDataPoint{
+		Labels:            labels,
+		StartTimeUnixNano: 0,
+		TimeUnixNano:      ts,
+		Count:             count,
+		Sum:               sum,
+		PercentileValues:  pcs,
+	}
+}
+
 // Prometheus TimeSeries
 func getPromLabels(lbs ...string) []prompb.Label {
 	pbLbs := prompb.Labels{
@@ -188,18 +225,16 @@ func getTimeSeries(labels []prompb.Label, samples ...prompb.Sample) *prompb.Time
 	}
 }
 
-//setCumulative is for creating the dataold.MetricData to test with
-func setTemporality(metricsData *dataold.MetricData, temp otlp.MetricDescriptor_Temporality) {
+func setCumulative(metricsData *dataold.MetricData) {
 	for _, r := range dataold.MetricDataToOtlp(*metricsData) {
 		for _, instMetrics := range r.InstrumentationLibraryMetrics {
 			for _, m := range instMetrics.Metrics {
-				m.MetricDescriptor.Temporality = temp
+				m.MetricDescriptor.Temporality = otlp.MetricDescriptor_CUMULATIVE
 			}
 		}
 	}
 }
 
-//setDataPointToNil is for creating the dataold.MetricData to test with
 func setDataPointToNil(metricsData *dataold.MetricData, dataField string) {
 	for _, r := range dataold.MetricDataToOtlp(*metricsData) {
 		for _, instMetrics := range r.InstrumentationLibraryMetrics {
@@ -219,7 +254,6 @@ func setDataPointToNil(metricsData *dataold.MetricData, dataField string) {
 	}
 }
 
-//setType is for creating the dataold.MetricData to test with
 func setType(metricsData *dataold.MetricData, dataField string) {
 	for _, r := range dataold.MetricDataToOtlp(*metricsData) {
 		for _, instMetrics := range r.InstrumentationLibraryMetrics {

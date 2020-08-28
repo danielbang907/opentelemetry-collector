@@ -30,6 +30,11 @@ import (
 
 const (
 	nameStr   = "__name__"
+	sumStr    = "_sum"
+	countStr  = "_count"
+	bucketStr = "_bucket"
+	leStr     = "le"
+	pInfStr   = "+Inf"
 	totalStr  = "total"
 	delimeter = "_"
 	keyStr    = "key"
@@ -186,7 +191,7 @@ func getPromMetricName(desc *otlp.MetricDescriptor, ns string) string {
 // and creates a WriteRequest from the struct -- can move to the helper.go file
 func wrapTimeSeries(tsMap map[string]*prompb.TimeSeries) (*prompb.WriteRequest, error) {
 	if len(tsMap) == 0 {
-		return nil, errors.New("invalid tsMap: cannot be empty map")
+		return nil, errors.New("invalid TsMap: cannot be empty map")
 	}
 	TsArray := []prompb.TimeSeries{}
 	for _, v := range tsMap {
