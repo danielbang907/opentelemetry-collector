@@ -58,31 +58,32 @@ func Test_validateMetrics(t *testing.T) {
 	// append true cases
 	for i := range validCombinations {
 		name := "valid_" + strconv.Itoa(i)
-		metric := pdata.NewMetric()
-		metric.SetName()
+		validMetric := &otlp.Metric{
+			Name:        name,
+			Data:
+				&otlp.Metric_IntGauge{
+				IntGauge:&otlp.IntGauge{
+					DataPoints: []*otlp.IntDataPoint {
+							getIntDataPoint(nil,intVal1,time1),
+					},
+				},
+			},
+		}
+
 		tests = append(tests, combTest{
 			name,
-			desc,
+			validMetric,
 			true,
 		})
 	}
-	// append false cases
-	for i := range invalidCombinations {
-		name := "invalid_" + strconv.Itoa(i)
-		desc := getDescriptor(name, i, invalidCombinations)
-		tests = append(tests, combTest{
-			name,
-			desc,
-			false,
-		})
-	}
+
 	// append nil case
 	tests = append(tests, combTest{"invalid_nil", nil, false})
 
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := validateMetrics(tt.desc)
+			got := validateMetrics(tt.metric)
 			assert.Equal(t, tt.want, got)
 		})
 	}
