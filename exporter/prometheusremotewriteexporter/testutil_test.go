@@ -17,12 +17,13 @@ package prometheusremotewriteexporter
 import (
 	"time"
 
+	data "google.golang.org/genproto/googleapis/analytics/data/v1alpha"
+
 	"github.com/prometheus/prometheus/prompb"
 
 	commonpb "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 )
-
 
 var (
 	time1   = uint64(time.Now().UnixNano())
@@ -84,6 +85,8 @@ var (
 		typeInt64 + "-" + label21 + "-" + value21 + "-" + label22 + "-" + value22: getTimeSeries(getPromLabels(label21, value21, label22, value22),
 			getSample(float64(intVal1), msTime2)),
 	}
+	bounds  = []float64{0.1, 0.5, 0.99}
+	buckets = []uint64{1, 2, 3}
 )
 
 // OTLP metrics
@@ -117,7 +120,7 @@ func getDoubleDataPoint(labels []*commonpb.StringKeyValue, value float64, ts uin
 	}
 }
 
-func getHistogramIntDataPoint(labels []*commonpb.StringKeyValue, ts uint64, sum float64, count uint64, bounds []float64,
+func getIntHistogramDataPoint(labels []*commonpb.StringKeyValue, ts uint64, sum float64, count uint64, bounds []float64,
 	buckets []uint64) *otlp.IntHistogramDataPoint {
 	return &otlp.IntHistogramDataPoint{
 		Labels:            labels,
@@ -131,7 +134,7 @@ func getHistogramIntDataPoint(labels []*commonpb.StringKeyValue, ts uint64, sum 
 	}
 }
 
-func getHistogramDoubleDataPoint(labels []*commonpb.StringKeyValue, ts uint64, sum float64, count uint64,
+func getDoubleHistogramDataPoint(labels []*commonpb.StringKeyValue, ts uint64, sum float64, count uint64,
 	bounds []float64, buckets []uint64) *otlp.DoubleHistogramDataPoint {
 	return &otlp.DoubleHistogramDataPoint{
 		Labels:            labels,
@@ -177,15 +180,6 @@ func getTimeSeries(labels []prompb.Label, samples ...prompb.Sample) *prompb.Time
 	}
 }
 
-func setMetricTemporality(metric otlp.Metric, temp otlp.AggregationTemporality) {
-	switch metric.Data.(type) {
-	case *otlp.Metric_IntSum:
-		metric.GetIntSum().AggregationTemporality = temp
-	case *otlp.Metric_DoubleSum:
-		metric.GetDoubleSum().AggregationTemporality = temp
-	case *otlp.Metric_IntHistogram:
-		metric.GetIntHistogram().AggregationTemporality = temp
-	case *otlp.Metric_DoubleHistogram:
-		metric.GetDoubleHistogram().AggregationTemporality = temp
-	}
+func getMetric(name string, mType data.Type, temp otlp.AggregationTemporality) {
+	data.Metric{}
 }

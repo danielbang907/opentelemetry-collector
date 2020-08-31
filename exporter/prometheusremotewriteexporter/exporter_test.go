@@ -36,8 +36,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
-	"go.opentelemetry.io/collector/internal/data"
-	"go.opentelemetry.io/collector/internal/data/testdata"
+	"go.opentelemetry.io/collector/internal/dataold"
+	"go.opentelemetry.io/collector/internal/dataold/testdataold"
 )
 
 // TODO: add bucket and histogram test cases for Test_PushMetrics

@@ -20,11 +20,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"io"
 	"net/http"
 	"net/url"
 	"sync"
+
+	"go.opentelemetry.io/collector/consumer/consumererror"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
@@ -33,8 +34,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
-	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 	"go.opentelemetry.io/collector/internal/data"
+	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 )
 
 // PrwExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint
@@ -109,7 +110,7 @@ func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int
 					if ok := validateMetrics(metric); !ok {
 						dropped++
 						errs = append(errs, consumererror.Permanent(
-							fmt.Errorf("metric has invalid temporality and type combination or unmatching type " +
+							fmt.Errorf("metric has invalid temporality and type combination or unmatching type "+
 								"and data field")))
 						continue
 					}
@@ -181,7 +182,6 @@ func (prwe *PrwExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries,
 // bucket of every data point as a Sample, and adding each Sample to its corresponding TimeSeries.
 // tsMap and metric cannot be nil.
 func (prwe *PrwExporter) handleHistogramMetric(tsMap map[string]*prompb.TimeSeries, metric *otlp.Metric) error {
-
 
 	switch metric.Data.(type) {
 	case *otlp.Metric_IntHistogram:

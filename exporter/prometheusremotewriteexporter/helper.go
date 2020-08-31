@@ -16,13 +16,14 @@ package prometheusremotewriteexporter
 
 import (
 	"errors"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"log"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 	"unicode"
+
+	"go.opentelemetry.io/collector/consumer/pdata"
 
 	"github.com/prometheus/prometheus/prompb"
 
@@ -183,7 +184,7 @@ func getPromMetricName(metric *otlp.Metric, ns string) string {
 	b.WriteString(name)
 
 	// do not add the total suffix if the metric name already ends in "total"
-	isCounter = isCounter && name[len(name) - len(totalStr):] != totalStr
+	isCounter = isCounter && name[len(name)-len(totalStr):] != totalStr
 
 	// Including units makes two metrics with the same name and label set belong to two different TimeSeries if the
 	// units are different.
@@ -270,6 +271,7 @@ func getTypeString(metric *otlp.Metric) string {
 	}
 	return ""
 }
+
 // addSingleDoubleDataPoint converts the metric value stored in pt to a Prometheus sample, and add the sample
 // to its corresponding time series in tsMap
 func addSingleDoubleDataPoint(pt *otlp.DoubleDataPoint, metric *otlp.Metric, namespace string,
@@ -306,8 +308,8 @@ func addSingleIntDataPoint(pt *otlp.IntDataPoint, metric *otlp.Metric, namespace
 	addSample(tsMap, sample, labels, metric)
 }
 
-func addSingleIntHistogramDataPoint (pt *otlp.IntHistogramDataPoint, metric *otlp.Metric, namespace string,
-	tsMap map[string]*prompb.TimeSeries){
+func addSingleIntHistogramDataPoint(pt *otlp.IntHistogramDataPoint, metric *otlp.Metric, namespace string,
+	tsMap map[string]*prompb.TimeSeries) {
 	if pt == nil {
 		return
 	}
@@ -335,7 +337,7 @@ func addSingleIntHistogramDataPoint (pt *otlp.IntHistogramDataPoint, metric *otl
 	var totalCount uint64
 
 	// process each bucket
-	for index, bound := range pt.GetExplicitBounds(){
+	for index, bound := range pt.GetExplicitBounds() {
 		if index >= len(pt.GetBucketCounts()) {
 			break
 		}
@@ -359,8 +361,8 @@ func addSingleIntHistogramDataPoint (pt *otlp.IntHistogramDataPoint, metric *otl
 	addSample(tsMap, infBucket, infLabels, metric)
 }
 
-func addSingleDoubleHistogramDataPoint (pt *otlp.IntHistogramDataPoint, metric *otlp.Metric, namespace string,
-	tsMap map[string]*prompb.TimeSeries)  {
+func addSingleDoubleHistogramDataPoint(pt *otlp.IntHistogramDataPoint, metric *otlp.Metric, namespace string,
+	tsMap map[string]*prompb.TimeSeries) {
 	if pt == nil {
 		return
 	}
@@ -388,7 +390,7 @@ func addSingleDoubleHistogramDataPoint (pt *otlp.IntHistogramDataPoint, metric *
 	var totalCount uint64
 
 	// process each bucket
-	for index, bound := range pt.GetExplicitBounds(){
+	for index, bound := range pt.GetExplicitBounds() {
 		if index >= len(pt.GetBucketCounts()) {
 			break
 		}

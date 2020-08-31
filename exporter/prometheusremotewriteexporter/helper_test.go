@@ -26,26 +26,119 @@ import (
 	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 )
 var (
-	validCombinations   = []otlp.Metric{
-
+	validMetrics   = []otlp.Metric{
+		{
+			Data:
+			&otlp.Metric_IntGauge{
+				IntGauge: &otlp.IntGauge{
+					DataPoints: []*otlp.IntDataPoint{
+						getIntDataPoint(lbs1,intVal1,time1),
+					},
+				},
+			},
+		},
+		{
+			Data:
+			&otlp.Metric_DoubleGauge{
+				DoubleGauge: &otlp.DoubleGauge{
+					DataPoints: []*otlp.DoubleDataPoint{
+						getDoubleDataPoint(lbs1,floatVal1,time1),
+					},
+				},
+			},
+		},
+		{
+			Data:
+			&otlp.Metric_IntSum{
+				IntSum: &otlp.IntSum{
+					DataPoints: []*otlp.IntDataPoint{
+						getIntDataPoint(lbs1,intVal1,time1),
+					},
+					AggregationTemporality:otlp.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
+				},
+			},
+		},
+		{
+			Data:
+			&otlp.Metric_DoubleSum{
+				DoubleSum: &otlp.DoubleSum{
+					DataPoints: []*otlp.DoubleDataPoint{
+						getDoubleDataPoint(lbs1,floatVal1,time1),
+					},
+					AggregationTemporality:otlp.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
+				},
+			},
+		},
+		{
+			Data:
+			&otlp.Metric_IntHistogram{
+				IntHistogram: &otlp.IntHistogram{
+					DataPoints: []*otlp.IntHistogramDataPoint{
+						getIntHistogramDataPoint(lbs1, time1, floatVal1, uint64(intVal1), bounds, buckets),
+					},
+					AggregationTemporality:otlp.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
+				},
+			},
+		},
+		{
+			Data:
+			&otlp.Metric_DoubleHistogram{
+				DoubleHistogram: &otlp.DoubleHistogram{
+					DataPoints: []*otlp.DoubleHistogramDataPoint{
+						getDoubleHistogramDataPoint(lbs1, time1, floatVal1, uint64(intVal1), bounds, buckets),
+					},
+					AggregationTemporality:otlp.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
+				},
+			},
+		},
 	}
-}
-	invalidCombinations = []combination{
-		{otlp.MetricDescriptor_MONOTONIC_INT64, otlp.MetricDescriptor_DELTA},
-		{otlp.MetricDescriptor_MONOTONIC_DOUBLE, otlp.MetricDescriptor_DELTA},
-		{otlp.MetricDescriptor_HISTOGRAM, otlp.MetricDescriptor_DELTA},
-		{otlp.MetricDescriptor_SUMMARY, otlp.MetricDescriptor_DELTA},
-		{otlp.MetricDescriptor_MONOTONIC_INT64, otlp.MetricDescriptor_DELTA},
-		{otlp.MetricDescriptor_MONOTONIC_DOUBLE, otlp.MetricDescriptor_DELTA},
-		{otlp.MetricDescriptor_HISTOGRAM, otlp.MetricDescriptor_DELTA},
-		{otlp.MetricDescriptor_SUMMARY, otlp.MetricDescriptor_DELTA},
-		{ty: otlp.MetricDescriptor_INVALID_TYPE},
-		{temp: otlp.MetricDescriptor_INVALID_TEMPORALITY},
-		{},
+
+	// different metrics that will cause error
+	invalidCombinations = []otlp.Metric{
+		// Category 1: type and data field doesn't match
+		{
+			Data:
+			&otlp.Metric_IntGauge{
+				IntGauge: nil,
+			},
+		},
+		{
+			Data:
+			&otlp.Metric_DoubleGauge{
+				DoubleGauge: nil,
+			},
+		},
+		{
+			Data:
+			&otlp.Metric_IntSum{
+				IntSum: nil,
+			},
+		},
+		{
+			Data:
+			&otlp.Metric_DoubleSum{
+				DoubleSum: nil,
+			},
+		},
+		{
+			Data:
+			&otlp.Metric_IntHistogram{
+				IntHistogram: nil,
+			},
+		},
+		{
+			Data:
+			&otlp.Metric_DoubleHistogram{
+				DoubleHistogram: nil,
+			},
+		},
+		//Category 2: invalid type and temporality combination
+
 	})
 // Test_validateMetrics checks validateMetrics return true if a type and temporality combination is valid, false
 // otherwise.
 func Test_validateMetrics(t *testing.T) {
+
 	// define a single test
 	type combTest struct {
 		name string
