@@ -105,11 +105,12 @@ func (prwe *PrwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) (int
 					if metric == nil {
 						continue
 					}
-					// check for valid type and temporality combination
+					// check for valid type and temporality combination and matching data field and type
 					if ok := validateMetrics(metric); !ok {
 						dropped++
 						errs = append(errs, consumererror.Permanent(
-							fmt.Errorf("unsupported type and temporality combination")))
+							fmt.Errorf("metric has invalid temporality and type combination or unmatching type " +
+								"and data field")))
 						continue
 					}
 					// handle individual metric based on type
@@ -153,33 +154,21 @@ func (prwe *PrwExporter) handleScalarMetric(tsMap map[string]*prompb.TimeSeries,
 	switch metric.Data.(type) {
 	// int points
 	case *otlp.Metric_DoubleGauge:
-		if metric.GetDoubleGauge() == nil {
-			return consumererror.Permanent(fmt.Errorf("nil data point field in metric %v", metric.GetName()))
-		}
 		for _, pt := range metric.GetDoubleGauge().GetDataPoints() {
 			addSingleDoubleDataPoint(pt, metric, prwe.namespace, tsMap)
 		}
 		return nil
 	case *otlp.Metric_IntGauge:
-		if metric.GetIntGauge() == nil {
-			return consumererror.Permanent(fmt.Errorf("nil data point field in metric %v", metric.GetName()))
-		}
 		for _, pt := range metric.GetIntGauge().GetDataPoints() {
 			addSingleIntDataPoint(pt, metric, prwe.namespace, tsMap)
 		}
 		return nil
 	case *otlp.Metric_DoubleSum:
-		if metric.GetDoubleSum() == nil {
-			return consumererror.Permanent(fmt.Errorf("nil data point field in metric %v", metric.GetName()))
-		}
 		for _, pt := range metric.GetDoubleSum().GetDataPoints() {
 			addSingleDoubleDataPoint(pt, metric, prwe.namespace, tsMap)
 		}
 		return nil
 	case *otlp.Metric_IntSum:
-		if metric.GetIntSum() == nil {
-			return consumererror.Permanent(fmt.Errorf("nil data point field in metric %v", metric.GetName()))
-		}
 		for _, pt := range metric.GetIntSum().GetDataPoints() {
 			addSingleIntDataPoint(pt, metric, prwe.namespace, tsMap)
 		}

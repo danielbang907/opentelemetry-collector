@@ -15,20 +15,14 @@
 package prometheusremotewriteexporter
 
 import (
-	"go.opentelemetry.io/collector/internal/dataold"
 	"time"
 
 	"github.com/prometheus/prometheus/prompb"
 
 	commonpb "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
 	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
-	"go.opentelemetry.io/collector/internal/data"
 )
 
-type combination struct {
-	ty   otlp.MetricDescriptor_Type
-	temp otlp.MetricDescriptor_Temporality
-}
 
 var (
 	time1   = uint64(time.Now().UnixNano())
@@ -78,31 +72,7 @@ var (
 	monotonicDoubleComb = 1
 	histogramComb       = 2
 	summaryComb         = 3
-	validCombinations   = []combination{
-		{otlp.MetricDescriptor_MONOTONIC_INT64, otlp.MetricDescriptor_CUMULATIVE},
-		{otlp.MetricDescriptor_MONOTONIC_DOUBLE, otlp.MetricDescriptor_CUMULATIVE},
-		{otlp.MetricDescriptor_HISTOGRAM, otlp.MetricDescriptor_CUMULATIVE},
-		{otlp.MetricDescriptor_SUMMARY, otlp.MetricDescriptor_CUMULATIVE},
-		{otlp.MetricDescriptor_INT64, otlp.MetricDescriptor_DELTA},
-		{otlp.MetricDescriptor_DOUBLE, otlp.MetricDescriptor_DELTA},
-		{otlp.MetricDescriptor_INT64, otlp.MetricDescriptor_INSTANTANEOUS},
-		{otlp.MetricDescriptor_DOUBLE, otlp.MetricDescriptor_INSTANTANEOUS},
-		{otlp.MetricDescriptor_INT64, otlp.MetricDescriptor_CUMULATIVE},
-		{otlp.MetricDescriptor_DOUBLE, otlp.MetricDescriptor_CUMULATIVE},
-	}
-	invalidCombinations = []combination{
-		{otlp.MetricDescriptor_MONOTONIC_INT64, otlp.MetricDescriptor_DELTA},
-		{otlp.MetricDescriptor_MONOTONIC_DOUBLE, otlp.MetricDescriptor_DELTA},
-		{otlp.MetricDescriptor_HISTOGRAM, otlp.MetricDescriptor_DELTA},
-		{otlp.MetricDescriptor_SUMMARY, otlp.MetricDescriptor_DELTA},
-		{otlp.MetricDescriptor_MONOTONIC_INT64, otlp.MetricDescriptor_DELTA},
-		{otlp.MetricDescriptor_MONOTONIC_DOUBLE, otlp.MetricDescriptor_DELTA},
-		{otlp.MetricDescriptor_HISTOGRAM, otlp.MetricDescriptor_DELTA},
-		{otlp.MetricDescriptor_SUMMARY, otlp.MetricDescriptor_DELTA},
-		{ty: otlp.MetricDescriptor_INVALID_TYPE},
-		{temp: otlp.MetricDescriptor_INVALID_TEMPORALITY},
-		{},
-	}
+
 	twoPointsSameTs = map[string]*prompb.TimeSeries{
 		typeInt64 + "-" + label11 + "-" + value11 + "-" + label12 + "-" + value12: getTimeSeries(getPromLabels(label11, value11, label12, value12),
 			getSample(float64(intVal1), msTime1),
@@ -147,22 +117,31 @@ func getDoubleDataPoint(labels []*commonpb.StringKeyValue, value float64, ts uin
 	}
 }
 
-func getHistogramIntDataPoint(labels []*commonpb.StringKeyValue, ts uint64, sum float64, count uint64, bounds []float64, buckets []uint64) *otlp.HistogramDataPoint {
-	bks := []*otlp.HistogramDataPoint_Bucket{}
-	for _, c := range buckets {
-		bks = append(bks, &otlp.HistogramDataPoint_Bucket{
-			Count:    c,
-			Exemplar: nil,
-		})
+func getHistogramIntDataPoint(labels []*commonpb.StringKeyValue, ts uint64, sum float64, count uint64, bounds []float64,
+	buckets []uint64) *otlp.IntHistogramDataPoint {
+	return &otlp.IntHistogramDataPoint{
+		Labels:            labels,
+		StartTimeUnixNano: 0,
+		TimeUnixNano:      ts,
+		Count:             count,
+		Sum:               int64(sum),
+		BucketCounts:      buckets,
+		ExplicitBounds:    bounds,
+		Exemplars:         nil,
 	}
-	return &otlp.HistogramDataPoint{
+}
+
+func getHistogramDoubleDataPoint(labels []*commonpb.StringKeyValue, ts uint64, sum float64, count uint64,
+	bounds []float64, buckets []uint64) *otlp.DoubleHistogramDataPoint {
+	return &otlp.DoubleHistogramDataPoint{
 		Labels:            labels,
 		StartTimeUnixNano: 0,
 		TimeUnixNano:      ts,
 		Count:             count,
 		Sum:               sum,
-		Buckets:           bks,
+		BucketCounts:      buckets,
 		ExplicitBounds:    bounds,
+		Exemplars:         nil,
 	}
 }
 
@@ -198,50 +177,15 @@ func getTimeSeries(labels []prompb.Label, samples ...prompb.Sample) *prompb.Time
 	}
 }
 
-func setCumulative(metricsData *dataold.MetricData) {
-	for _, r := range dataold.MetricDataToOtlp(*metricsData) {
-		for _, instMetrics := range r.InstrumentationLibraryMetrics {
-			for _, m := range instMetrics.Metrics {
-				m.MetricDescriptor.Temporality = otlp.MetricDescriptor_CUMULATIVE
-			}
-		}
-	}
-}
-
-func setDataPointToNil(metricsData *dataold.MetricData, dataField string) {
-	for _, r := range dataold.MetricDataToOtlp(*metricsData) {
-		for _, instMetrics := range r.InstrumentationLibraryMetrics {
-			for _, m := range instMetrics.Metrics {
-				switch dataField {
-				case typeMonotonicInt64:
-					m.Int64DataPoints = nil
-				case typeMonotonicDouble:
-					m.DoubleDataPoints = nil
-				case typeHistogram:
-					m.HistogramDataPoints = nil
-				case typeSummary:
-					m.SummaryDataPoints = nil
-				}
-			}
-		}
-	}
-}
-
-func setType(metricsData *dataold.MetricData, dataField string) {
-	for _, r := range dataold.MetricDataToOtlp(*metricsData) {
-		for _, instMetrics := range r.InstrumentationLibraryMetrics {
-			for _, m := range instMetrics.Metrics {
-				switch dataField {
-				case typeMonotonicInt64:
-					m.GetMetricDescriptor().Type = otlp.MetricDescriptor_MONOTONIC_INT64
-				case typeMonotonicDouble:
-					m.GetMetricDescriptor().Type = otlp.MetricDescriptor_MONOTONIC_DOUBLE
-				case typeHistogram:
-					m.GetMetricDescriptor().Type = otlp.MetricDescriptor_HISTOGRAM
-				case typeSummary:
-					m.GetMetricDescriptor().Type = otlp.MetricDescriptor_SUMMARY
-				}
-			}
-		}
+func setMetricTemporality(metric otlp.Metric, temp otlp.AggregationTemporality) {
+	switch metric.Data.(type) {
+	case *otlp.Metric_IntSum:
+		metric.GetIntSum().AggregationTemporality = temp
+	case *otlp.Metric_DoubleSum:
+		metric.GetDoubleSum().AggregationTemporality = temp
+	case *otlp.Metric_IntHistogram:
+		metric.GetIntHistogram().AggregationTemporality = temp
+	case *otlp.Metric_DoubleHistogram:
+		metric.GetDoubleHistogram().AggregationTemporality = temp
 	}
 }

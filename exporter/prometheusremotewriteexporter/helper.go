@@ -49,22 +49,25 @@ func (a ByLabelName) Len() int           { return len(a) }
 func (a ByLabelName) Less(i, j int) bool { return a[i].Name < a[j].Name }
 func (a ByLabelName) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 
-// validateMetrics returns a bool representing whether the metric has a valid type and temporality combination.
+// validateMetrics returns a bool representing whether the metric has a valid type and temporality combination and a
+// matching metric type and field
 func validateMetrics(metric *otlp.Metric) bool {
 	switch metric.Data.(type) {
-	case *otlp.Metric_DoubleGauge, *otlp.Metric_IntGauge:
-		return true
+	case *otlp.Metric_DoubleGauge:
+		return metric.GetDoubleGauge() != nil
+	case *otlp.Metric_IntGauge:
+		return metric.GetIntGauge() != nil
 	case *otlp.Metric_DoubleSum:
-		return metric.GetDoubleSum().GetAggregationTemporality() ==
+		return metric.GetDoubleSum() != nil && metric.GetDoubleSum().GetAggregationTemporality() ==
 			otlp.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE
 	case *otlp.Metric_IntSum:
-		return metric.GetIntSum().GetAggregationTemporality() ==
+		return metric.GetIntSum() != nil && metric.GetIntSum().GetAggregationTemporality() ==
 			otlp.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE
 	case *otlp.Metric_DoubleHistogram:
-		return metric.GetDoubleHistogram().GetAggregationTemporality() ==
+		return metric.GetDoubleHistogram() != nil && metric.GetDoubleHistogram().GetAggregationTemporality() ==
 			otlp.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE
 	case *otlp.Metric_IntHistogram:
-		return metric.GetIntHistogram().GetAggregationTemporality() ==
+		return metric.GetIntHistogram() != nil && metric.GetIntHistogram().GetAggregationTemporality() ==
 			otlp.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE
 	}
 	return false

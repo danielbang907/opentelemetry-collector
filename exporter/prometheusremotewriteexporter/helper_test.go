@@ -15,6 +15,7 @@
 package prometheusremotewriteexporter
 
 import (
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"strconv"
 	"testing"
 
@@ -22,16 +23,33 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	common "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
-	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1old"
+	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
 )
+var (
+	validCombinations   = []otlp.Metric{
 
+	}
+}
+	invalidCombinations = []combination{
+		{otlp.MetricDescriptor_MONOTONIC_INT64, otlp.MetricDescriptor_DELTA},
+		{otlp.MetricDescriptor_MONOTONIC_DOUBLE, otlp.MetricDescriptor_DELTA},
+		{otlp.MetricDescriptor_HISTOGRAM, otlp.MetricDescriptor_DELTA},
+		{otlp.MetricDescriptor_SUMMARY, otlp.MetricDescriptor_DELTA},
+		{otlp.MetricDescriptor_MONOTONIC_INT64, otlp.MetricDescriptor_DELTA},
+		{otlp.MetricDescriptor_MONOTONIC_DOUBLE, otlp.MetricDescriptor_DELTA},
+		{otlp.MetricDescriptor_HISTOGRAM, otlp.MetricDescriptor_DELTA},
+		{otlp.MetricDescriptor_SUMMARY, otlp.MetricDescriptor_DELTA},
+		{ty: otlp.MetricDescriptor_INVALID_TYPE},
+		{temp: otlp.MetricDescriptor_INVALID_TEMPORALITY},
+		{},
+	})
 // Test_validateMetrics checks validateMetrics return true if a type and temporality combination is valid, false
 // otherwise.
 func Test_validateMetrics(t *testing.T) {
 	// define a single test
 	type combTest struct {
 		name string
-		desc *otlp.MetricDescriptor
+		metric *otlp.Metric
 		want bool
 	}
 
@@ -40,7 +58,8 @@ func Test_validateMetrics(t *testing.T) {
 	// append true cases
 	for i := range validCombinations {
 		name := "valid_" + strconv.Itoa(i)
-		desc := getDescriptor(name, i, validCombinations)
+		metric := pdata.NewMetric()
+		metric.SetName()
 		tests = append(tests, combTest{
 			name,
 			desc,
