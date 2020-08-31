@@ -15,13 +15,14 @@
 package prometheusremotewriteexporter
 
 import (
+	"go.opentelemetry.io/collector/internal/dataold"
 	"time"
 
 	"github.com/prometheus/prometheus/prompb"
 
 	commonpb "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
-	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1old"
-	"go.opentelemetry.io/collector/internal/dataold"
+	otlp "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/metrics/v1"
+	"go.opentelemetry.io/collector/internal/data"
 )
 
 type combination struct {
@@ -128,18 +129,8 @@ func getLabels(labels ...string) []*commonpb.StringKeyValue {
 	return set
 }
 
-func getDescriptor(name string, i int, comb []combination) *otlp.MetricDescriptor {
-	return &otlp.MetricDescriptor{
-		Name:        name,
-		Description: "",
-		Unit:        "",
-		Type:        comb[i].ty,
-		Temporality: comb[i].temp,
-	}
-}
-
-func getIntDataPoint(labels []*commonpb.StringKeyValue, value int64, ts uint64) *otlp.Int64DataPoint {
-	return &otlp.Int64DataPoint{
+func getIntDataPoint(labels []*commonpb.StringKeyValue, value int64, ts uint64) *otlp.IntDataPoint {
+	return &otlp.IntDataPoint{
 		Labels:            labels,
 		StartTimeUnixNano: 0,
 		TimeUnixNano:      ts,
@@ -156,7 +147,7 @@ func getDoubleDataPoint(labels []*commonpb.StringKeyValue, value float64, ts uin
 	}
 }
 
-func getHistogramDataPoint(labels []*commonpb.StringKeyValue, ts uint64, sum float64, count uint64, bounds []float64, buckets []uint64) *otlp.HistogramDataPoint {
+func getHistogramIntDataPoint(labels []*commonpb.StringKeyValue, ts uint64, sum float64, count uint64, bounds []float64, buckets []uint64) *otlp.HistogramDataPoint {
 	bks := []*otlp.HistogramDataPoint_Bucket{}
 	for _, c := range buckets {
 		bks = append(bks, &otlp.HistogramDataPoint_Bucket{
@@ -172,24 +163,6 @@ func getHistogramDataPoint(labels []*commonpb.StringKeyValue, ts uint64, sum flo
 		Sum:               sum,
 		Buckets:           bks,
 		ExplicitBounds:    bounds,
-	}
-}
-
-func getSummaryDataPoint(labels []*commonpb.StringKeyValue, ts uint64, sum float64, count uint64, pcts []float64, values []float64) *otlp.SummaryDataPoint {
-	pcs := []*otlp.SummaryDataPoint_ValueAtPercentile{}
-	for i, v := range values {
-		pcs = append(pcs, &otlp.SummaryDataPoint_ValueAtPercentile{
-			Percentile: pcts[i],
-			Value:      v,
-		})
-	}
-	return &otlp.SummaryDataPoint{
-		Labels:            labels,
-		StartTimeUnixNano: 0,
-		TimeUnixNano:      ts,
-		Count:             count,
-		Sum:               sum,
-		PercentileValues:  pcs,
 	}
 }
 
